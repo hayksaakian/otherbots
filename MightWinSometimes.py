@@ -1,16 +1,16 @@
 import rg
 import operator
 
-allyDistance = 15
-enemyDistance = 7
+allyDistance = 20
+enemyDistance = 10
 class Robot:
     def act(self, game):
-        # if there are enemies around get em
         bestDistance = 999
         bestLoc = (0,0)
+        otherPlaces = rg.locs_around(self.location, filter_out=('invalid', 'obstacle'))
         for loc, bot in game['robots'].iteritems():
             if bot.player_id != self.player_id:
-                if rg.dist(loc, self.location) < bestDistance:
+                if rg.wdist(loc, self.location) < bestDistance:
                     bestDistance = rg.dist(loc, self.location)
                     bestLoc = loc
         if game['robots'][self.location].hp <= 10:
@@ -29,16 +29,20 @@ class Robot:
         for loc, bot in game['robots'].iteritems():
             if bot.player_id != self.player_id:
                 if rg.dist(loc, self.location) <= 1:
-                    return ['attack', loc]
+                    if loc in otherPlaces:
+                        return ['attack', loc]
         if rg.dist(bestLoc, self.location) <= enemyDistance:
-            return ['move', rg.toward(self.location, bestLoc)]
+            if rg.toward(self.location, bestLoc) in otherPlaces:
+                return ['move', rg.toward(self.location, bestLoc)]
 
                 
         # otherwise clump up
         for loc, bot in game['robots'].iteritems():
             if bot.player_id == self.player_id:
-                if rg.dist(loc, self.location) <= allyDistance:
-                    return ['move', rg.toward(self.location, loc)]
+                if rg.wdist(loc, self.location) <= allyDistance:
+                    if loc in otherPlaces:
+                        return ['move', rg.toward(self.location, loc)]
         if self.location == rg.CENTER_POINT:
             return ['guard']
-        return ['move', rg.toward(self.location, rg.CENTER_POINT)]
+        if rg.toward(self.location, rg.CENTER_POINT) in otherPlaces:
+            return ['move', rg.toward(self.location, rg.CENTER_POINT)]
